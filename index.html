@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Biblioteca Estadística UNIPAZ - Grupo 2</title>
+<style>
+:root {
+    --blue: #1F3A5F;
+    --teal: #2A9D8F;
+    --orange: #F59E0B;
+    --bg: #f8fafc;
+    --ink: #1e293b;
+    --border: #e2e8f0;
+}
+* { box-sizing: border-box; }
+body { margin: 0; font: 14px Arial, sans-serif; background: var(--bg); color: var(--ink); }
+header { background: var(--blue); color: white; padding: 20px; }
+header h1 { margin: 0 0 5px; font-size: 1.5rem; }
+header p { margin: 0; color: #cbd5e1; }
+.wrap { max-width: 1200px; margin: auto; padding: 20px; }
+
+/* Pestañas */
+.tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px; border-bottom: 2px solid var(--border); padding-bottom: 10px; }
+.tabs button { background: transparent; color: #64748b; border: none; padding: 10px 15px; font-size: 1rem; font-weight: bold; cursor: pointer; border-radius: 6px; }
+.tabs button:hover { background: #e2e8f0; }
+.tabs button.active { background: white; color: var(--blue); box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+
+/* Paneles y Formularios */
+section.panel { display: none; background: white; padding: 25px; border-radius: 8px; border: 1px solid var(--border); box-shadow: 0 1px 3px rgba(0,0,0,0.05); margin-bottom: 20px; }
+section.panel.active { display: block; }
+h2 { margin-top: 0; color: var(--blue); border-bottom: 2px solid var(--border); padding-bottom: 10px; font-size: 1.3rem; }
+h3 { color: var(--blue); margin-top: 20px; font-size: 1.1rem; }
+label { display: block; font-weight: bold; margin: 12px 0 5px; font-size: 0.9rem; color: #475569; }
+input, select, textarea { width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; font: inherit; }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; }
+
+/* Botones estilo Captura (Etapa 2) */
+.actions { display: flex; gap: 10px; flex-wrap: wrap; margin: 20px 0; }
+.btn-outline { background: white; color: var(--blue); border: 1px solid var(--blue); padding: 8px 16px; border-radius: 6px; font-weight: bold; cursor: pointer; text-align: center; }
+.btn-outline:hover { background: #f1f5f9; }
+.btn-primary { background: var(--blue); color: white; border: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; }
+.btn-delete { color: #dc2626; border: 1px solid #dc2626; background: white; border-radius: 4px; padding: 3px 8px; font-weight: bold; cursor: pointer; font-size: 0.9rem; }
+.btn-delete:hover { background: #fef2f2; }
+
+/* Tarjetas de Estadística (Etapa 3) */
+.badge-orange { background: var(--orange); color: white; padding: 4px 10px; border-radius: 12px; font-size: 0.8rem; font-weight: bold; margin-left: 10px; vertical-align: middle; }
+.stat-cards { display: flex; gap: 15px; margin-bottom: 20px; overflow-x: auto; padding-bottom: 5px; }
+.stat-card { border: 1px solid var(--border); border-radius: 8px; padding: 15px; flex: 1; min-width: 130px; text-align: center; background: white; }
+.stat-card .val { font-size: 1.3rem; font-weight: bold; color: var(--ink); margin-bottom: 5px; }
+.stat-card .lbl { font-size: 0.75rem; color: #64748b; text-transform: uppercase; }
+
+/* Tablas estilo Captura (Etapa 2 y 3) */
+.table-wrap { overflow-x: auto; margin-top: 15px; }
+table { border-collapse: collapse; width: 100%; text-align: center; font-size: 0.9rem; }
+th, td { border: 1px solid var(--border); padding: 10px; }
+th { background: var(--blue); color: white; font-weight: normal; }
+tr:nth-child(even) { background-color: #f8fafc; }
+.text-left { text-align: left; }
+
+.sturges-text { background: #f8fafc; padding: 12px; border: 1px solid var(--border); border-radius: 6px; margin: 15px 0; font-size: 0.95rem; }
+
+@media print {
+    header, .tabs, .actions, .no-print, button { display: none !important; }
+    body { background: white; }
+    section.panel { display: block !important; border: none; box-shadow: none; padding: 0; }
+    .wrap { max-width: none; padding: 0; }
+}
+</style>
+</head>
+<body>
+
+<header>
+    <h1>EstadíApp – UNIPAZ</h1>
+    <p>Proyecto de Aula - Estadística | Estudio de Biblioteca Grupo 2</p>
+</header>
+
+<div class="wrap">
+    <div class="tabs no-print">
+        <button class="active" data-tab="registrar">Base de datos</button>
+        <button data-tab="analisis">Análisis Descriptivo</button>
+        <button data-tab="probabilidad">Probabilidad</button>
+        <button data-tab="informe">Informe</button>
+    </div>
+
+    <!-- ETAPA 2: REGISTRO Y BASE DE DATOS -->
+    <section class="panel active" id="registrar">
+        <h2>Registro de observaciones</h2>
+        <form id="recordForm"><div class="grid">
+            <div><label>Fecha</label><input type="date" id="fecha" required></div>
+            <div><label>Hora</label><input type="time" id="hora" required></div>
+            <div><label>Permanencia (min)</label><input type="number" id="permanencia" min="0" step="0.1" required></div>
+            <div><label>Recursos consultados</label><input type="number" id="recursos" min="0" step="1" required></div>
+            <div><label>Motivo de visita</label><select id="motivo" required><option value="">Seleccione</option><option>Consulta bibliográfica</option><option>Estudio individual</option><option>Trabajo grupal</option><option>Préstamo o devolución</option><option>Uso de computadores</option><option>Otro servicio</option></select></div>
+            <div><label>Programa académico</label><select id="programa" required><option value="">Seleccione</option><option>Ingeniería de Producción</option><option>Ingeniería Ambiental y Saneamiento</option><option>Ingeniería Agroindustrial</option><option>Ingeniería Civil</option><option>Medicina Veterinaria y Zootecnia</option><option>Otro programa</option></select></div>
+            <div><label>¿Encontró lo que buscaba?</label><select id="encontro" required><option value="">Seleccione</option><option>Sí</option><option>No</option><option>Parcialmente</option></select></div>
+            <div><label>Satisfacción (1 a 5)</label><select id="satisfaccion" required><option value="">Seleccione</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select></div>
+        </div>
+        <div class="actions"><button class="btn-primary" type="submit">Guardar registro</button></div>
+        </form>
+
+        <h2 style="margin-top: 40px;">Base de datos</h2>
+        <div class="actions no-print" style="margin-top: 10px;">
+            <button class="btn-outline" onclick="exportCSV()">Exportar CSV (Excel)</button>
+            <label class="btn-outline" style="display:inline-block; margin:0;">Importar CSV y unir
+                <input type="file" accept=".csv,text/csv" id="csvImport" style="display:none" onchange="importCSV(event)">
+            </label>
+            <button class="btn-outline" onclick="backup()">Descargar respaldo (.json)</button>
+            <label class="btn-outline" style="display:inline-block; margin:0;">Restaurar respaldo
+                <input type="file" accept=".json" style="display:none" onchange="restoreJSON(event)">
+            </label>
+        </div>
+
+        <div class="table-wrap">
+            <table id="recordsTable">
+                <thead>
+                    <tr>
+                        <th>N.°</th><th>Fecha</th><th>Hora</th><th>Permanencia (min)</th><th>Recursos</th><th>Motivo</th><th>Programa</th><th>Encontró</th><th>Satisfacción (1 a 5)</th><th class="no-print"></th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </section>
+
+    <!-- ETAPA 3: ANÁLISIS DESCRIPTIVO -->
+    <section class="panel" id="analisis">
+        <h2>Análisis descriptivo por variable</h2>
+        <div class="grid" style="background: #f8fafc; padding: 15px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 20px;">
+            <div>
+                <label>Variable a analizar</label>
+                <select id="varSelect"></select>
+            </div>
+            <div>
+                <label>Filtrar por (opcional)</label>
+                <select id="filterSelect"><option value="">— Sin filtro —</option></select>
+            </div>
+        </div>
+        <div id="analysisOut"></div>
+    </section>
+
+    <!-- ETAPA 4: PROBABILIDAD -->
+    <section class="panel" id="probabilidad">
+        <h2>Probabilidad simple y condicional</h2>
+        <div class="grid">
+            <div><label>Evento A (variable)</label><select id="eventA"></select></div>
+            <div><label>Condición A</label><select id="condA"></select></div>
+            <div><label>Valor umbral si cuantitativa</label><input id="threshold" type="number" step="any" value="30"></div>
+            <div><label>Operador</label><select id="operator"><option value="gt">Mayor que</option><option value="le">Menor o igual que</option></select></div>
+            <div><label>Evento B (variable cualitativa)</label><select id="eventB"></select></div>
+            <div><label>Categoría B</label><select id="condB"></select></div>
+        </div>
+        <div class="actions"><button class="btn-primary" onclick="calcProbability()">Calcular</button></div>
+        <div id="probOut"></div>
+        <hr style="border:0; border-top:1px solid var(--border); margin:20px 0;">
+        <h2>Tabla de contingencia</h2>
+        <div class="grid">
+            <div><label>Variable filas</label><select id="contRow"></select></div>
+            <div><label>Variable columnas</label><select id="contCol"></select></div>
+        </div>
+        <div class="actions"><button class="btn-outline" onclick="contingency()">Construir tabla</button></div>
+        <div id="contOut"></div>
+    </section>
+
+    <!-- INFORME -->
+    <section class="panel" id="informe">
+        <h2>Informe del estudio</h2>
+        <div id="reportStatic"></div>
+        <label>Integrantes</label><input id="members">
+        <label>Objetivo</label><textarea id="objective">Analizar el tiempo de permanencia y uso de la biblioteca de UNIPAZ...</textarea>
+        <div class="actions no-print"><button class="btn-primary" onclick="window.print()">Imprimir / Guardar PDF</button></div>
+    </section>
+</div>
+
+<script>
+// CONFIGURACIÓN DE VARIABLES (BIBLIOTECA)
+const fields = {
+    permanencia: { label: "Tiempo de permanencia (min)", type: "quant" },
+    recursos: { label: "Recursos consultados", type: "quant" },
+    motivo: { label: "Motivo de visita", type: "qual" },
+    programa: { label: "Programa académico", type: "qual" },
+    encontro: { label: "¿Encontró lo que buscaba?", type: "qual" },
+    satisfaccion: { label: "Satisfacción (1 a 5)", type: "qual" }
+};
+
+let data = JSON.parse(localStorage.getItem("estadiapp_unipaz_biblio") || "[]");
+const $ = id => document.getElementById(id);
+
+function save() {
+    localStorage.setItem("estadiapp_unipaz_biblio", JSON.stringify(data));
+    renderRecords();
+    populateSelects();
+}
+
+function val(r, k) { return r[k]; }
+function fmt(x, d=2) { return Number(x).toLocaleString("es-CO", {maximumFractionDigits: d}); }
+
+// ==========================================
+// RENDERIZAR TABLA BASE DE DATOS (Orden descendente)
+// ==========================================
+function renderRecords() {
+    let tb = $("recordsTable").querySelector("tbody");
+    tb.innerHTML = "";
+    
+    // Recorrer en reversa para mostrar el N.° más alto arriba
+    let reversedData = data.slice().reverse();
+    let total = data.length;
+
+    reversedData.forEach((r, idx) => {
+        let realIndex = total - idx; 
+        let tr = document.createElement("tr");
+        let cells = [realIndex, r.fecha, r.hora, String(r.permanencia).replace('.',','), r.recursos, r.motivo, r.programa, r.encontro, r.satisfaccion];
+        
+        cells.forEach(c => { 
+            let td = document.createElement("td"); 
+            td.textContent = c; 
+            tr.appendChild(td); 
+        });
+        
+        let td = document.createElement("td");
+        td.className = "no-print";
+        let b = document.createElement("button");
+        b.textContent = "x";
+        b.className = "btn-delete";
+        b.onclick = () => { if(confirm("¿Eliminar este registro?")) { data.splice(realIndex - 1, 1); save(); } };
+        td.appendChild(b);
+        tr.appendChild(td);
+        tb.appendChild(tr);
+    });
+}
+
+$("fecha").value = new Date().toISOString().slice(0,10);
+$("hora").value = new Date().toTimeString().slice(0,5);
+
+$("recordForm").onsubmit = e => {
+    e.preventDefault();
+    let r = {};
+    ["fecha","hora","permanencia","recursos","motivo","programa","encontro","satisfaccion"].forEach(k => r[k] = $(k).value);
+    r.permanencia = Number(r.permanencia);
+    r.recursos = Number(r.recursos);
+    data.push(r);
+    save();
+    e.target.reset();
+    $("fecha").value = new Date().toISOString().slice(0,10);
+    $("hora").value = new Date().toTimeString().slice(0,5);
+};
+
+function populateSelects(){
+    let qual = Object.keys(fields).filter(k=>fields[k].type==="qual"), all = Object.keys(fields);
+    ["varSelect","eventA","eventB","contRow","contCol"].forEach(id => {
+        $(id).innerHTML = all.map(k => `<option value="${k}">${fields[k].label}</option>`).join("");
+    });
+    $("filterSelect").innerHTML = '<option value="">— Sin filtro —</option>' + qual.map(k => `<option value="${k}">${fields[k].label}</option>`).join("");
+    $("condA").innerHTML = ""; $("condB").innerHTML = "";
+    fillConditions();
+    $("eventA").onchange = fillConditions; $("eventB").onchange = fillConditions;
+}
+
+function categories(k) { return [...new Set(data.map(r=>val(r,k)))].filter(x=>x!==undefined&&x!=="").sort(); }
+function fillConditions() {
+    let a = $("eventA").value, b = $("eventB").value;
+    $("condA").innerHTML = fields[a]?.type==="qual" ? categories(a).map(v=>`<option>${v}</option>`).join("") : '<option value="threshold">Usar umbral</option>';
+    $("condB").innerHTML = categories(b).map(v=>`<option>${v}</option>`).join("");
+}
+
+function filtered() {
+    let f = $("filterSelect").value;
+    if(!f) return data;
+    let opts = categories(f);
+    let chosen = prompt("Filtrar por " + fields[f].label + " (opciones: " + opts.join(", ") + ")");
+    return chosen && opts.includes(chosen) ? data.filter(r=>val(r,f)===chosen) : data;
+}
+
+// ==========================================
+// ESTADÍSTICA DESCRIPTIVA Y DISEÑO DE TARJETAS
+// ==========================================
+function q(a,p) {
+    let pos = (a.length-1)*p, lo = Math.floor(pos), hi = Math.ceil(pos);
+    if(lo === hi) return a[lo];
+    return a[lo] + (a[hi]-a[lo])*(pos-lo);
+}
+
+function quantStats(arr) {
+    arr = arr.map(Number).filter(Number.isFinite).sort((a,b)=>a-b);
+    let n = arr.length;
+    if(!n) return null;
+    let sum = arr.reduce((a,b)=>a+b,0);
+    let mean = sum/n;
+    let median = q(arr,.5), q1 = q(arr,.25), q3 = q(arr,.75);
+    let variance = n > 1 ? arr.reduce((s,x)=>s+(x-mean)**2,0)/(n-1) : 0;
+    let sd = Math.sqrt(variance);
+    let freq = {};
+    arr.forEach(x => freq[x] = (freq[x]||0)+1);
+    let maxFreq = Math.max(...Object.values(freq));
+    let modes = maxFreq > 1 ? Object.keys(freq).filter(k => freq[k]===maxFreq) : [];
+    
+    return {
+        n, sum, mean, median, q1, q3, min:arr[0], max:arr[n-1], range:arr[n-1]-arr[0], 
+        variance, sd, cv: mean? sd/Math.abs(mean)*100 : 0, modes, maxFreq
+    };
+}
+
+function analyze() {
+    let k = $("varSelect").value, ds = filtered(), arr = ds.map(r=>val(r,k)).filter(v=>v!==undefined&&v!=="");
+    let out = $("analysisOut");
+    if(!arr.length) { out.innerHTML = "<p>Sin registros para analizar.</p>"; return; }
+    
+    let headerHtml = `<div style="margin-bottom: 20px;">
+        <h3 style="display: inline-block; margin: 0; font-size: 1.2rem;">${fields[k].label}</h3>
+        <span class="badge-orange">${arr.length} datos</span>
+    </div>`;
+
+    if(fields[k].type === "quant") {
+        let s = quantStats(arr);
+        
+        let modeDisplay = s.modes.length > 1 ? "Varias" : (s.modes.length === 1 ? fmt(s.modes[0]) : "Ninguna");
+        let cardsHtml = `
+        <div class="stat-cards">
+            <div class="stat-card"><div class="val">${s.n}</div><div class="lbl">n (datos)</div></div>
+            <div class="stat-card"><div class="val">${fmt(s.mean)}</div><div class="lbl">Media x̄</div></div>
+            <div class="stat-card"><div class="val">${fmt(s.median)}</div><div class="lbl">Mediana Me</div></div>
+            <div class="stat-card"><div class="val">${modeDisplay}</div><div class="lbl">Moda Mo (ver tabla)</div></div>
+            <div class="stat-card"><div class="val">${fmt(s.sd)}</div><div class="lbl">Desv. estándar s</div></div>
+            <div class="stat-card"><div class="val">${fmt(s.cv)} %</div><div class="lbl">Coef. variación CV</div></div>
+        </div>`;
+
+        let modeText = s.modes.length ? s.modes.map(m=>fmt(m)).join(" ; ") + ` (se repite ${s.maxFreq} veces)` : "No hay moda";
+        let measureRows = [
+            ["Suma Σx", fmt(s.sum), "Total de los valores observados"],
+            ["Media aritmética x̄", fmt(s.mean), `x̄ = Σx ÷ n = ${fmt(s.sum)} ÷ ${s.n}`],
+            ["Mediana Me", fmt(s.median), "Valor central de los datos ordenados: el 50 % está por debajo"],
+            ["Moda Mo", modeText, "Valor que más se repite"],
+            ["Mínimo - Máximo", `${fmt(s.min)} - ${fmt(s.max)}`, "Valores extremos"],
+            ["Rango R", fmt(s.range), `R = Máx - Mín`],
+            ["Varianza muestral s²", fmt(s.variance), "s² = Σ(x - x̄)² ÷ (n - 1)"],
+            ["Desviación estándar s", fmt(s.sd), "s = √s² - cuánto se alejan los datos, en promedio, de la media"],
+            ["Coeficiente de variación CV", fmt(s.cv) + " %", "CV = (s ÷ x̄) × 100 - permite comparar variabilidad entre grupos"],
+            ["Cuartiles Q1 - Q2 - Q3", `${fmt(s.q1)} - ${fmt(s.median)} - ${fmt(s.q3)}`, "Dividen los datos ordenados en 4 partes iguales (igual que CUARTIL.INC de Excel)"],
+            ["Rango intercuartílico RIC", fmt(s.q3-s.q1), "RIC = Q3 - Q1 - donde está el 50 % central de los datos"]
+        ];
+
+        let tHtml = '<div class="table-wrap"><table><thead><tr><th>Medida</th><th>Valor</th><th>Cómo se calcula / qué significa</th></tr></thead><tbody>';
+        measureRows.forEach(row => {
+            tHtml += `<tr><td class="text-left" style="font-weight:bold; color:#475569;">${row[0]}</td><td>${row[1]}</td><td class="text-left" style="color:#64748b; font-size:0.85rem;">${row[2]}</td></tr>`;
+        });
+        tHtml += '</tbody></table></div>';
+
+        let k_sturges = Math.round(1 + 3.322 * Math.log10(s.n));
+        k_sturges = Math.max(1, k_sturges);
+        let decimals = Math.max(...arr.map(x => (String(x).split(".")[1]||"").length), 0);
+        let mult = Math.pow(10, decimals);
+        let A = Math.ceil((s.range / k_sturges) * mult) / mult;
+        if(A === 0) A = 1 / mult;
+
+        let sturgesHtml = `
+        <h3 style="margin-top: 30px; border-bottom: 1px solid var(--border); padding-bottom: 8px;">Tabla de distribución de frecuencias (datos agrupados)</h3>
+        <div class="sturges-text">
+            <strong>Número de clases por Sturges:</strong> k = 1 + 3,322 log(${s.n}) ≈ <strong>${k_sturges}</strong> &nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;
+            <strong>Amplitud:</strong> A = R ÷ k = ${fmt(s.range)} ÷ ${k_sturges} ≈ <strong>${fmt(A, decimals)}</strong>
+        </div>`;
+
+        let rows = [], cum = 0, current_li = s.min;
+        for(let i=0; i<k_sturges; i++) {
+            let li = Math.round(current_li * mult) / mult;
+            let ls = Math.round((li + A) * mult) / mult;
+            let isLast = (i === k_sturges - 1);
+            let fi = arr.map(Number).filter(x => {
+                let xr = Math.round(x * mult) / mult;
+                return isLast ? (xr >= li && xr <= ls) : (xr >= li && xr < ls);
+            }).length;
+            
+            cum += fi;
+            let xi = (li + ls) / 2;
+            rows.push([
+                i+1, fmt(li, decimals), fmt(ls, decimals), fmt(xi, decimals+2),
+                fi, cum, fmt(fi/s.n, 4), fmt(cum/s.n, 4)
+            ]);
+            current_li = ls;
+        }
+
+        let fTableHtml = '<div class="table-wrap"><table><thead><tr><th>Clase</th><th>Límite inferior</th><th>Límite superior</th><th>Marca xi</th><th>fi</th><th>Fi</th><th>hi</th><th>Hi</th></tr></thead><tbody>';
+        rows.forEach(r => fTableHtml += `<tr>${r.map(c => `<td>${c}</td>`).join("")}</tr>`);
+        fTableHtml += `<tr style="font-weight:bold; background:#e2e8f0;"><td></td><td></td><td>Total</td><td></td><td>${s.n}</td><td></td><td>1</td><td></td></tr>`;
+        fTableHtml += '</tbody></table></div><p style="font-size:0.8rem; color:#64748b; margin-top:5px;">Intervalos [Li, Ls): incluyen el límite inferior y no el superior, excepto la última clase, que incluye ambos.</p>';
+
+        out.innerHTML = headerHtml + cardsHtml + tHtml + sturgesHtml + fTableHtml;
+
+    } else {
+        let counts = {};
+        arr.forEach(v => counts[v] = (counts[v]||0)+1);
+        let cumulative = 0, n = arr.length;
+        let freqData = Object.entries(counts).sort((a,b) => b[1]-a[1]).map(([cat,fi]) => {
+            cumulative += fi;
+            return [cat, fi, cumulative, fmt(fi/n, 4), fmt(cumulative/n, 4), fmt((fi/n)*100, 2)+" %"];
+        });
+
+        let qTable = '<div class="table-wrap"><table><thead><tr><th>Categoría</th><th>fi</th><th>Fi</th><th>hi</th><th>Hi</th><th>%</th></tr></thead><tbody>';
+        freqData.forEach(r => qTable += `<tr>${r.map((c, i) => i===0 ? `<td class="text-left">${c}</td>` : `<td>${c}</td>`).join("")}</tr>`);
+        qTable += `<tr style="font-weight:bold; background:#e2e8f0;"><td class="text-left">Total</td><td>${n}</td><td></td><td>1</td><td></td><td>100 %</td></tr>`;
+        qTable += '</tbody></table></div>';
+
+        out.innerHTML = headerHtml + qTable;
+    }
+}
+
+$("varSelect").onchange = analyze;
+$("filterSelect").onchange = analyze;
+
+// ==========================================
+// NAVEGACIÓN Y EXPORTACIÓN/IMPORTACIÓN
+// ==========================================
+document.querySelectorAll(".tabs button").forEach(b => b.onclick = () => {
+    document.querySelectorAll(".tabs button").forEach(x => x.classList.toggle("active", x===b));
+    document.querySelectorAll("section.panel").forEach(p => p.classList.toggle("active", p.id===b.dataset.tab));
+    if(b.dataset.tab === "analisis") analyze();
+});
+
+function download(name, content, type) {
+    let blob = new Blob([content], {type});
+    let url = URL.createObjectURL(blob);
+    let a = document.createElement("a");
+    a.href = url; a.download = name; a.click();
+    URL.revokeObjectURL(url);
+}
+
+function exportCSV() {
+    if(!data.length) { alert("No hay datos."); return; }
+    // Incluir "Franja horaria" como pidió el prompt anterior
+    let headers = ["Fecha", "Hora", "Franja horaria", ...Object.keys(fields).filter(k=>k!=="franja").map(k=>fields[k].label)];
+    let rows = data.map(r => [
+        r.fecha, r.hora, slot(r.hora), 
+        String(r.permanencia).replace('.',','), 
+        r.recursos, r.motivo, r.programa, r.encontro, r.satisfaccion
+    ]);
+    let csv = "﻿" + [headers, ...rows].map(row => row.map(v => '"' + String(v??"").replace(/"/g, '""') + '"').join(";")).join("
+");
+    download("Base_Datos_Biblioteca.csv", csv, "text/csv;charset=utf-8");
+}
+
+function importCSV(e) {
+    let file = e.target.files[0];
+    if(!file) return;
+    let reader = new FileReader();
+    reader.onload = () => {
+        let text = reader.result.replace(/^﻿/, "");
+        let lines = text.split(/?
+/).filter(Boolean);
+        if(lines.length < 2) return;
+        let parse = line => {
+            let m = line.match(/("([^"]|"")*"|[^;]*)(;|$)/g);
+            return m ? m.map(x => x.replace(/;$/, "").replace(/^"|"$/g, "").replace(/""/g, '"')) : [];
+        };
+        
+        let expectedHeaders = ["Fecha", "Hora", "Franja horaria", ...Object.keys(fields).filter(k=>k!=="franja").map(k=>fields[k].label)];
+        let fileHeaders = lines[0].split(";").map(x => x.replace(/^"|"$/g, ""));
+        
+        if (expectedHeaders.length !== fileHeaders.length) {
+            alert("El archivo no tiene las columnas correctas.");
+            e.target.value = "";
+            return;
+        }
+
+        let added = lines.slice(1).map(line => {
+            let v = parse(line);
+            return { 
+                fecha: v[0], 
+                hora: v[1], 
+                // v[2] es la franja, no la guardamos porque se calcula 
+                permanencia: Number(v[3].replace(',','.')), 
+                recursos: Number(v[4]), 
+                motivo: v[5], 
+                programa: v[6], 
+                encontro: v[7], 
+                satisfaccion: v[8] 
+            };
+        });
+        data = data.concat(added);
+        save();
+        alert("Se importaron y unieron " + added.length + " registros.");
+        e.target.value = "";
+    };
+    reader.readAsText(file, "UTF-8");
+}
+
+function backup() {
+    if(!data.length) { alert("No hay datos para respaldar."); return; }
+    download("Respaldo_Biblioteca.json", JSON.stringify(data, null, 2), "application/json");
+}
+
+function restoreJSON(e) {
+    let f = e.target.files[0];
+    if(!f) return;
+    let rd = new FileReader();
+    rd.onload = () => {
+        try {
+            let parsed = JSON.parse(rd.result);
+            if(!Array.isArray(parsed)) throw Error();
+            data = data.concat(parsed);
+            save();
+            alert("Respaldo restaurado: " + parsed.length + " registros unidos.");
+        } catch {
+            alert("Archivo inválido.");
+        }
+        e.target.value = "";
+    };
+    rd.readAsText(f);
+}
+
+populateSelects(); renderRecords();
+</script>
+</body>
+</html>
