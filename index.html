@@ -195,6 +195,16 @@ function save() {
 function val(r, k) { return r[k]; }
 function fmt(x, d=2) { return Number(x).toLocaleString("es-CO", {maximumFractionDigits: d}); }
 
+// Función para calcular la Franja Horaria
+function slot(hora) {
+    if (!hora) return "";
+    let h = parseInt(hora.split(":")[0], 10);
+    if (h >= 6 && h < 12) return "Mañana";
+    if (h >= 12 && h < 18) return "Tarde";
+    if (h >= 18) return "Noche";
+    return "Madrugada";
+}
+
 // ==========================================
 // RENDERIZAR TABLA BASE DE DATOS (Orden descendente)
 // ==========================================
@@ -423,39 +433,58 @@ function download(name, content, type) {
     URL.revokeObjectURL(url);
 }
 
+// 1. Exportar a CSV
 function exportCSV() {
-    if(!data.length) { alert("No hay datos."); return; }
-    // Incluir "Franja horaria" como pidió el prompt anterior
-    let headers = ["Fecha", "Hora", "Franja horaria", ...Object.keys(fields).filter(k=>k!=="franja").map(k=>fields[k].label)];
+    if(!data.length) { alert("No hay datos para exportar."); return; }
+    
+    let headers = ["Fecha", "Hora", "Franja horaria", ...Object.keys(fields).map(k=>fields[k].label)];
+    
     let rows = data.map(r => [
-        r.fecha, r.hora, slot(r.hora), 
-        String(r.permanencia).replace('.',','), 
-        r.recursos, r.motivo, r.programa, r.encontro, r.satisfaccion
+        r.fecha, 
+        r.hora, 
+        slot(r.hora), 
+        String(r.permanencia).replace('.', ','), // Coma decimal
+        r.recursos, 
+        r.motivo, 
+        r.programa, 
+        r.encontro, 
+        r.satisfaccion
     ]);
-    let csv = "﻿" + [headers, ...rows].map(row => row.map(v => '"' + String(v??"").replace(/"/g, '""') + '"').join(";")).join("
-");
+    
+    // \uFEFF añade el BOM para que Excel en español detecte el UTF-8 (tildes)
+    let csv = "\uFEFF" + [headers, ...rows].map(row => 
+        row.map(v => '"' + String(v ?? "").replace(/"/g, '""') + '"').join(";") // Separador punto y coma
+    ).join("\r\n");
+    
     download("Base_Datos_Biblioteca.csv", csv, "text/csv;charset=utf-8");
 }
 
+// 2. Importar desde CSV y Unir
 function importCSV(e) {
     let file = e.target.files[0];
     if(!file) return;
+    
     let reader = new FileReader();
     reader.onload = () => {
-        let text = reader.result.replace(/^﻿/, "");
-        let lines = text.split(/?
-/).filter(Boolean);
-        if(lines.length < 2) return;
+        // Remover el BOM si existe
+        let text = reader.result.replace(/^\uFEFF/, "");
+        let lines = text.split(/\r?\n/).filter(Boolean);
+        if(lines.length < 2) {
+            alert("El archivo está vacío o no tiene el formato adecuado.");
+            e.target.value = "";
+            return;
+        }
+        
         let parse = line => {
             let m = line.match(/("([^"]|"")*"|[^;]*)(;|$)/g);
             return m ? m.map(x => x.replace(/;$/, "").replace(/^"|"$/g, "").replace(/""/g, '"')) : [];
         };
         
-        let expectedHeaders = ["Fecha", "Hora", "Franja horaria", ...Object.keys(fields).filter(k=>k!=="franja").map(k=>fields[k].label)];
+        let expectedHeaders = ["Fecha", "Hora", "Franja horaria", ...Object.keys(fields).map(k=>fields[k].label)];
         let fileHeaders = lines[0].split(";").map(x => x.replace(/^"|"$/g, ""));
         
-        if (expectedHeaders.length !== fileHeaders.length) {
-            alert("El archivo no tiene las columnas correctas.");
+        if (expectedHeaders.length !== fileHeaders.length || expectedHeaders[3] !== fileHeaders[3]) {
+            alert("⚠️ Error: El archivo no tiene las mismas columnas de esta aplicación.");
             e.target.value = "";
             return;
         }
@@ -465,8 +494,8 @@ function importCSV(e) {
             return { 
                 fecha: v[0], 
                 hora: v[1], 
-                // v[2] es la franja, no la guardamos porque se calcula 
-                permanencia: Number(v[3].replace(',','.')), 
+                // v[2] es la franja horaria (se ignora al guardar porque se calcula) 
+                permanencia: Number(v[3].replace(',', '.')), // Devolver el punto para los cálculos
                 recursos: Number(v[4]), 
                 motivo: v[5], 
                 programa: v[6], 
@@ -474,19 +503,22 @@ function importCSV(e) {
                 satisfaccion: v[8] 
             };
         });
+        
         data = data.concat(added);
         save();
-        alert("Se importaron y unieron " + added.length + " registros.");
+        alert(`✅ Se importaron y unieron ${added.length} registros exitosamente.`);
         e.target.value = "";
     };
     reader.readAsText(file, "UTF-8");
 }
 
+// 3. Descargar Respaldo JSON
 function backup() {
     if(!data.length) { alert("No hay datos para respaldar."); return; }
     download("Respaldo_Biblioteca.json", JSON.stringify(data, null, 2), "application/json");
 }
 
+// 4. Restaurar Respaldo JSON
 function restoreJSON(e) {
     let f = e.target.files[0];
     if(!f) return;
@@ -497,9 +529,9 @@ function restoreJSON(e) {
             if(!Array.isArray(parsed)) throw Error();
             data = data.concat(parsed);
             save();
-            alert("Respaldo restaurado: " + parsed.length + " registros unidos.");
+            alert(`✅ Respaldo restaurado: ${parsed.length} registros unidos correctamente.`);
         } catch {
-            alert("Archivo inválido.");
+            alert("⚠️ Archivo inválido o corrupto.");
         }
         e.target.value = "";
     };
